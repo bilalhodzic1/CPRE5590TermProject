@@ -1,0 +1,9 @@
+enclave {
+    trusted{
+        public void enclave_print_string([in, string]char* str_to_print);
+        public void compute_array_average([in, count=cnt] int *numbers, size_t cnt);
+    };
+    untrusted {
+        void ocall_print_string([in, string] const char *str);
+    };
+};
