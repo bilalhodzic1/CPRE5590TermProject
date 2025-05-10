@@ -157,29 +157,29 @@ void print_byte_by_byte(const char *str, size_t len){
 int SGX_CDECL main(int argc, char *argv[]){
     (void)(argc);
     (void)(argv);
-    // if(argc < 2){
-    //     return -1;
-    // }
+    if(argc < 2){
+        return -1;
+    }
     if(initialize_enclave() < 0){
         return -1; 
     }
 
-    // if(strcmp("makekey", argv[1]) == 0){
-    //     uint32_t sealed_data_size = 0;
-    //     get_sealed_data_size(global_eid, &sealed_data_size);
-    //     uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
-    //     sgx_status_t retval;
-    //     seal_data(global_eid, &retval, temp_sealed_buf, sealed_data_size);
-    //     std::ofstream("sealed_data_blob.txt", std::ios::binary).write((char*)temp_sealed_buf, sealed_data_size);
-    // }else if (strcmp("readkey", argv[1]) == 0){
-    //     size_t fsize = get_file_size("sealed_data_blob.txt");
-    //     uint8_t *temp_buf = (uint8_t *)malloc(fsize);
-    //     std::ifstream("sealed_data_blob.txt", std::ios::binary).read((char*)temp_buf, fsize);
-    //     sgx_status_t retval;
-    //     unseal_data(global_eid, &retval, temp_buf, fsize);
-    // }
+    if(strcmp("makekey", argv[1]) == 0){
+        uint32_t sealed_data_size = 0;
+        get_sealed_data_size(global_eid, &sealed_data_size);
+        uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
+        sgx_status_t retval;
+        seal_data(global_eid, &retval, temp_sealed_buf, sealed_data_size);
+        std::ofstream("sealed_aes_key.txt", std::ios::binary).write((char*)temp_sealed_buf, sealed_data_size);
+    }else if (strcmp("testkey", argv[1]) == 0){
+        size_t fsize = get_file_size("sealed_data_blob.txt");
+        uint8_t *temp_buf = (uint8_t *)malloc(fsize);
+        std::ifstream("sealed_aes_key.txt", std::ios::binary).read((char*)temp_buf, fsize);
+        sgx_status_t retval;
+        unseal_data(global_eid, &retval, temp_buf, fsize);
+    }
 
-    test_aes_key(global_eid);
+    //test_aes_key(global_eid);
 
     // int numbers[] = {2,5,7};
     // compute_array_average(global_eid, numbers, 3);

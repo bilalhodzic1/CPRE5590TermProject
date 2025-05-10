@@ -6,23 +6,15 @@
 #include <ippcp.h> 
 
 static const int KEY_SIZE = 16;
-
-/*! Message size in bytes */
 static const int MSG_LEN = 60;
-
-/*! Initialization vector size in bytes */
 static const int IV_LEN = 12;
 
-
-/*! 128-bit secret key */
 static Ipp8u key128[KEY_SIZE] = { 0xfe, 0xff, 0xe9, 0x92, 0x86, 0x65, 0x73, 0x1c,
                                   0x6d, 0x6a, 0x8f, 0x94, 0x67, 0x30, 0x83, 0x08 };
 
-/*! Initialization vector */
 static const Ipp8u iv[IV_LEN] = { 0xca, 0xfe, 0xba, 0xbe, 0xfa, 0xce,
                                   0xdb, 0xad, 0xde, 0xca, 0xf8, 0x88 };
 
-/*! Cipher text */
 static Ipp8u cipherText[MSG_LEN] = { 0x42, 0x83, 0x1e, 0xc2, 0x21, 0x77, 0x74, 0x24, 0x4b, 0x72,
                                      0x21, 0xb7, 0x84, 0xd0, 0xd4, 0x9c, 0xe3, 0xaa, 0x21, 0x2f,
                                      0x2c, 0x02, 0xa4, 0xe0, 0x35, 0xc1, 0x7e, 0x23, 0x29, 0xac,
@@ -35,16 +27,31 @@ void test_aes_key(){
     int AESGCMSize = 0;
     Ipp8u pOutPlainText[MSG_LEN] = {};
     IppsAES_GCMState* pAESGCMState = 0;
-    IppStatus status = ippStsNoErr;
-    status = ippsAES_GCMGetSize(&AESGCMSize);
+    ippsAES_GCMGetSize(&AESGCMSize);
     pAESGCMState = (IppsAES_GCMState*)(new Ipp8u[AESGCMSize]);
-    status = ippsAES_GCMInit(key128, KEY_SIZE, pAESGCMState, AESGCMSize);
-    status = ippsAES_GCMStart(iv, IV_LEN, NULL, 0, pAESGCMState);
-    status = ippsAES_GCMDecrypt(cipherText, pOutPlainText, MSG_LEN, pAESGCMState);
+    ippsAES_GCMInit(key128, KEY_SIZE, pAESGCMState, AESGCMSize);
+    ippsAES_GCMStart(iv, IV_LEN, NULL, 0, pAESGCMState);
+    ippsAES_GCMDecrypt(cipherText, pOutPlainText, MSG_LEN, pAESGCMState);
     print_byte_by_byte((const char*)pOutPlainText, MSG_LEN);
     ippsAES_GCMReset(pAESGCMState);
     if (pAESGCMState)
         delete[] (Ipp8u*)pAESGCMState;
+}
+
+sgx_status_t seal_aes_key(uint8_t* sealed_blob, uint32_t data_size){
+    Ipp8u combined[KEY_SIZE + IV_LEN];
+    memcpy(combined, key128, KEY_SIZE);
+    memcpy(combined + KEY_SIZE, iv, IV_LEN);
+    uint32_t sealed_data_size = sgx_calc_sealed_data_size(0, sizeof(combined));
+    uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
+    sgx_status_t  err = sgx_seal_data(0, NULL, sizeof(combined), (uint8_t *)combined, sealed_data_size, (sgx_sealed_data_t *)temp_sealed_buf);
+    if (err == SGX_SUCCESS)
+    {
+        memcpy(sealed_blob, temp_sealed_buf, sealed_data_size);
+    }
+
+    free(temp_sealed_buf);
+    return err;
 }
 
 void enclave_print_string(char* str_to_print){
