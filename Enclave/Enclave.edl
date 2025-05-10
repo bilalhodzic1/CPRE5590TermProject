@@ -11,5 +11,6 @@ enclave {
     untrusted {
         void ocall_print_string([in, string] const char *str);
         void print_byte_by_byte([in, string] const char *str, size_t len);
+        void print_char_by_char([in, string] const char *str, size_t len);
     };
 };

@@ -153,6 +153,12 @@ void print_byte_by_byte(const char *str, size_t len){
     }
     printf("\n");
 }
+void print_char_by_char(const char *str, size_t len){
+    for (size_t i = 0; i < len; ++i) {
+        printf("%c", (unsigned char)str[i]);
+    }
+    printf("\n");
+}
 
 int SGX_CDECL main(int argc, char *argv[]){
     (void)(argc);
