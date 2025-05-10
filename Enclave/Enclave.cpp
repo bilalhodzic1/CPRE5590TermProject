@@ -4,7 +4,7 @@
 #include <stdio.h> /* vsnprintf */
 #include <string.h>
 
-char encrypt_data[BUFSIZ] = "Data to encrypt";
+char encrypt_data[BUFSIZ] = "Data to encrypt\n";
 
 void enclave_print_string(char* str_to_print){
     ocall_print_string(str_to_print);
@@ -47,7 +47,7 @@ sgx_status_t unseal_data(const uint8_t *sealed_blob, size_t data_size)
     uint32_t decrypt_data_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_blob);
     uint8_t *decrypt_data = (uint8_t *)malloc(decrypt_data_len);
     sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_blob, NULL, 0, decrypt_data, &decrypt_data_len);
-
+    ocall_print_string((char*)decrypt_data);
     free(decrypt_data);
     return ret;
 }

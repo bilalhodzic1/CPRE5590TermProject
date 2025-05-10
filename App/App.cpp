@@ -105,6 +105,14 @@ static sgx_errlist_t sgx_errlist[] = {
     },
 };
 
+static size_t get_file_size(const char *filename)
+{
+    std::ifstream ifs(filename, std::ios::in | std::ios::binary);
+    ifs.seekg(0, std::ios::end);
+    size_t size = (size_t)ifs.tellg();
+    return size;
+}
+
 void print_error_message(sgx_status_t ret)
 {
     size_t idx = 0;
@@ -151,7 +159,6 @@ int SGX_CDECL main(int argc, char *argv[]){
     }
 
     if(strcmp("makekey", argv[1]) == 0){
-        printf("IT RAN\n");
         uint32_t sealed_data_size = 0;
         get_sealed_data_size(global_eid, &sealed_data_size);
         uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
@@ -159,7 +166,11 @@ int SGX_CDECL main(int argc, char *argv[]){
         seal_data(global_eid, &retval, temp_sealed_buf, sealed_data_size);
         std::ofstream("sealed_data_blob.txt", std::ios::binary).write((char*)temp_sealed_buf, sealed_data_size);
     }else if (strcmp("readkey", argv[1]) == 0){
-
+        size_t fsize = get_file_size("sealed_data_blob.txt");
+        uint8_t *temp_buf = (uint8_t *)malloc(fsize);
+        std::ifstream("sealed_data_blob.txt", std::ios::binary).read((char*)temp_buf, fsize);
+        sgx_status_t retval;
+        unseal_data(global_eid, &retval, temp_buf, fsize);
     }
 
     int numbers[] = {2,5,7};
