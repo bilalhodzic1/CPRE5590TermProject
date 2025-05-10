@@ -169,14 +169,14 @@ int SGX_CDECL main(int argc, char *argv[]){
         get_sealed_data_size(global_eid, &sealed_data_size);
         uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
         sgx_status_t retval;
-        seal_data(global_eid, &retval, temp_sealed_buf, sealed_data_size);
-        std::ofstream("sealed_aes_key.txt", std::ios::binary).write((char*)temp_sealed_buf, sealed_data_size);
+        seal_aes_key(global_eid, &retval, temp_sealed_buf, sealed_data_size);
+        std::ofstream("sealed_sym_key.txt", std::ios::binary).write((char*)temp_sealed_buf, sealed_data_size);
     }else if (strcmp("testkey", argv[1]) == 0){
-        size_t fsize = get_file_size("sealed_data_blob.txt");
+        size_t fsize = get_file_size("sealed_sym_key.txt");
         uint8_t *temp_buf = (uint8_t *)malloc(fsize);
-        std::ifstream("sealed_aes_key.txt", std::ios::binary).read((char*)temp_buf, fsize);
+        std::ifstream("sealed_sym_key.txt", std::ios::binary).read((char*)temp_buf, fsize);
         sgx_status_t retval;
-        unseal_data(global_eid, &retval, temp_buf, fsize);
+        test_aes_key(global_eid, &retval, temp_buf, fsize);
     }
 
     //test_aes_key(global_eid);

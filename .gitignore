@@ -39,3 +39,5 @@ app
 *_t.c
 sealed_data_blob.txt
 .vscode
+
+sealed_sym_key.txt
