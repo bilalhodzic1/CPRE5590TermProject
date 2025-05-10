@@ -141,14 +141,19 @@ void ocall_print_string(const char *str)
 int SGX_CDECL main(int argc, char *argv[]){
     (void)(argc);
     (void)(argv);
+    
     if(initialize_enclave() < 0){
         return -1; 
+    }
+
+    if(strcmp("makekey", argv[1]) == 0){
+        
     }
 
     int numbers[] = {2,5,7};
     compute_array_average(global_eid, numbers, 3);
 
-    char* test_string = "Here is a test string to print in the enclave\n";
+    char test_string[] = "Here is a test string to print in the enclave\n";
     enclave_print_string(global_eid,test_string);
 
     sgx_destroy_enclave(global_eid);
