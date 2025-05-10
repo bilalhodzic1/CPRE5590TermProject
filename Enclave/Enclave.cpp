@@ -21,24 +21,33 @@ static const Ipp8u iv[IV_LEN] = { 0xca, 0xfe, 0xba, 0xbe, 0xfa, 0xce,
                                   0xdb, 0xad, 0xde, 0xca, 0xf8, 0x88 };
 
 char encrypt_data[BUFSIZ] = "Data to encrypt\n";
-sgx_status_t test_aes_key(const uint8_t *sealed_blob, size_t data_size){
-    uint32_t decrypt_data_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_blob);
-    uint8_t *decrypt_data = (uint8_t *)malloc(decrypt_data_len);
-    sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_blob, NULL, 0, decrypt_data, &decrypt_data_len);
-    Ipp8u unsealedkey128[KEY_SIZE];
-    memcpy(unsealedkey128, decrypt_data, KEY_SIZE);
+
+void decrypt_object(Ipp8u *pOutPlainText, Ipp8u *unsealedkey128){
     int AESGCMSize = 0;
-    Ipp8u pOutPlainText[MSG_LEN] = {};
     IppsAES_GCMState* pAESGCMState = 0;
     ippsAES_GCMGetSize(&AESGCMSize);
     pAESGCMState = (IppsAES_GCMState*)(new Ipp8u[AESGCMSize]);
     ippsAES_GCMInit(unsealedkey128, KEY_SIZE, pAESGCMState, AESGCMSize);
     ippsAES_GCMStart(iv, IV_LEN, NULL, 0, pAESGCMState);
     ippsAES_GCMDecrypt(cipherText, pOutPlainText, MSG_LEN, pAESGCMState);
-    print_byte_by_byte((const char*)pOutPlainText, MSG_LEN);
     ippsAES_GCMReset(pAESGCMState);
     if (pAESGCMState)
         delete[] (Ipp8u*)pAESGCMState;
+}
+
+void get_key(const uint8_t *sealed_blob, Ipp8u *unsealedkey128){
+    uint32_t decrypt_data_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_blob);
+    uint8_t *decrypt_data = (uint8_t *)malloc(decrypt_data_len);
+    sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_blob, NULL, 0, decrypt_data, &decrypt_data_len);
+    memcpy(unsealedkey128, decrypt_data, KEY_SIZE);
+}
+
+sgx_status_t test_aes_key(const uint8_t *sealed_blob, size_t data_size){
+    Ipp8u unsealedkey128[KEY_SIZE];
+    get_key(sealed_blob, unsealedkey128);
+    Ipp8u pOutPlainText[MSG_LEN] = {};
+    decrypt_object(pOutPlainText, unsealedkey128);
+    print_byte_by_byte((const char*)pOutPlainText, MSG_LEN);
 }
 
 sgx_status_t seal_aes_key(uint8_t* sealed_blob, uint32_t data_size){
