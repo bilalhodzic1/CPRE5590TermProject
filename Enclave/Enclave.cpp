@@ -3,8 +3,49 @@
 #include <stdarg.h>
 #include <stdio.h> /* vsnprintf */
 #include <string.h>
+#include <ippcp.h> 
+
+static const int KEY_SIZE = 16;
+
+/*! Message size in bytes */
+static const int MSG_LEN = 60;
+
+/*! Initialization vector size in bytes */
+static const int IV_LEN = 12;
+
+
+/*! 128-bit secret key */
+static Ipp8u key128[KEY_SIZE] = { 0xfe, 0xff, 0xe9, 0x92, 0x86, 0x65, 0x73, 0x1c,
+                                  0x6d, 0x6a, 0x8f, 0x94, 0x67, 0x30, 0x83, 0x08 };
+
+/*! Initialization vector */
+static const Ipp8u iv[IV_LEN] = { 0xca, 0xfe, 0xba, 0xbe, 0xfa, 0xce,
+                                  0xdb, 0xad, 0xde, 0xca, 0xf8, 0x88 };
+
+/*! Cipher text */
+static Ipp8u cipherText[MSG_LEN] = { 0x42, 0x83, 0x1e, 0xc2, 0x21, 0x77, 0x74, 0x24, 0x4b, 0x72,
+                                     0x21, 0xb7, 0x84, 0xd0, 0xd4, 0x9c, 0xe3, 0xaa, 0x21, 0x2f,
+                                     0x2c, 0x02, 0xa4, 0xe0, 0x35, 0xc1, 0x7e, 0x23, 0x29, 0xac,
+                                     0xa1, 0x2e, 0x21, 0xd5, 0x14, 0xb2, 0x54, 0x66, 0x93, 0x1c,
+                                     0x7d, 0x8f, 0x6a, 0x5a, 0xac, 0x84, 0xaa, 0x05, 0x1b, 0xa3,
+                                     0x0b, 0x39, 0x6a, 0x0a, 0xac, 0x97, 0x3d, 0x58, 0xe0, 0x91 };
 
 char encrypt_data[BUFSIZ] = "Data to encrypt\n";
+void test_aes_key(){
+    int AESGCMSize = 0;
+    Ipp8u pOutPlainText[MSG_LEN] = {};
+    IppsAES_GCMState* pAESGCMState = 0;
+    IppStatus status = ippStsNoErr;
+    status = ippsAES_GCMGetSize(&AESGCMSize);
+    pAESGCMState = (IppsAES_GCMState*)(new Ipp8u[AESGCMSize]);
+    status = ippsAES_GCMInit(key128, KEY_SIZE, pAESGCMState, AESGCMSize);
+    status = ippsAES_GCMStart(iv, IV_LEN, NULL, 0, pAESGCMState);
+    status = ippsAES_GCMDecrypt(cipherText, pOutPlainText, MSG_LEN, pAESGCMState);
+    print_byte_by_byte((const char*)pOutPlainText, MSG_LEN);
+    ippsAES_GCMReset(pAESGCMState);
+    if (pAESGCMState)
+        delete[] (Ipp8u*)pAESGCMState;
+}
 
 void enclave_print_string(char* str_to_print){
     ocall_print_string(str_to_print);
