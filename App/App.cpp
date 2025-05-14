@@ -132,7 +132,7 @@ int SGX_CDECL main(int argc, char *argv[]) {
         uint8_t *data_buffer = (uint8_t *)malloc(fsize);
         std::ifstream(argv[2], std::ios::binary).read((char *)data_buffer, data_size);
         sgx_status_t retval;
-        test_aes_key(global_eid, &retval, temp_buf, fsize, data_buffer, data_size);
+        perform_aggregation(global_eid, &retval, temp_buf, fsize, data_buffer, data_size, 1);
     }
 
     sgx_destroy_enclave(global_eid);

@@ -43,3 +43,4 @@ sealed_data_blob.txt
 sealed_sym_key.txt
 .clang-format
 data.bin
+test.bin
