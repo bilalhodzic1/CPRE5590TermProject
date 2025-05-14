@@ -134,7 +134,8 @@ int SGX_CDECL main(int argc, char *argv[]) {
         sgx_status_t retval;
         int output_buffer_size = 12 + sizeof(double) + 16;
         uint8_t output_buffer[output_buffer_size];
-        perform_aggregation(global_eid, &retval, temp_buf, fsize, data_buffer, data_size, 1,
+        int type = atoi(argv[3]);
+        perform_aggregation(global_eid, &retval, temp_buf, fsize, data_buffer, data_size, type,
                             output_buffer, output_buffer_size);
         std::ofstream("output.bin", std::ios::binary)
             .write(reinterpret_cast<char *>(output_buffer), output_buffer_size);

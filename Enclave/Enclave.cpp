@@ -62,10 +62,32 @@ sgx_status_t perform_aggregation(const uint8_t *sealed_blob, size_t data_size,
     double agg_result = 0.0;
     if (type == 1) {
         double summation = 0.0;
-        for (size_t i = 0; i < numValues; ++i) {
+        for (int i = 0; i < numValues; i++) {
             summation += userValues[i];
         }
         agg_result = summation;
+    } else if (type == 2) {
+        double max = userValues[0];
+        for (int i = 0; i < numValues; i++) {
+            if (userValues[i] > max) {
+                max = userValues[i];
+            }
+        }
+        agg_result = max;
+    } else if (type == 3) {
+        double min = userValues[0];
+        for (int i = 0; i < numValues; i++) {
+            if (userValues[i] < min) {
+                min = userValues[i];
+            }
+        }
+        agg_result = min;
+    } else if (type == 4) {
+        double summation = 0.0;
+        for (int i = 0; i < numValues; i++) {
+            summation += userValues[i];
+        }
+        agg_result = summation / (double)numValues;
     }
     Ipp8u encryption_iv[12];
     generate_random_IV(encryption_iv);
