@@ -128,8 +128,11 @@ int SGX_CDECL main(int argc, char *argv[]) {
         size_t fsize = get_file_size("sealed_sym_key.txt");
         uint8_t *temp_buf = (uint8_t *)malloc(fsize);
         std::ifstream("sealed_sym_key.txt", std::ios::binary).read((char *)temp_buf, fsize);
+        size_t data_size = get_file_size(argv[2]);
+        uint8_t *data_buffer = (uint8_t *)malloc(fsize);
+        std::ifstream(argv[2], std::ios::binary).read((char *)data_buffer, data_size);
         sgx_status_t retval;
-        test_aes_key(global_eid, &retval, temp_buf, fsize);
+        test_aes_key(global_eid, &retval, temp_buf, fsize, data_buffer, data_size);
     }
 
     sgx_destroy_enclave(global_eid);

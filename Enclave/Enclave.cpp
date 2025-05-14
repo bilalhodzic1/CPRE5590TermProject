@@ -8,29 +8,34 @@
 #include "Enclave_t.h"
 
 static const int KEY_SIZE = 16;
-static const int MSG_LEN = 60;
+static const int MSG_LEN = 30;
 static const int IV_LEN = 12;
 static Ipp8u key128_blank[KEY_SIZE] = {};
 
-static Ipp8u cipherText[MSG_LEN] = {0x42, 0x83, 0x1e, 0xc2, 0x21, 0x77, 0x74, 0x24, 0x4b, 0x72,
-                                     0x21, 0xb7, 0x84, 0xd0, 0xd4, 0x9c, 0xe3, 0xaa, 0x21, 0x2f,
-                                     0x2c, 0x02, 0xa4, 0xe0, 0x35, 0xc1, 0x7e, 0x23, 0x29, 0xac,
-                                     0xa1, 0x2e, 0x21, 0xd5, 0x14, 0xb2, 0x54, 0x66, 0x93, 0x1c,
-                                     0x7d, 0x8f, 0x6a, 0x5a, 0xac, 0x84, 0xaa, 0x05, 0x1b, 0xa3,
-                                     0x0b, 0x39, 0x6a, 0x0a, 0xac, 0x97, 0x3d, 0x58, 0xe0, 0x91};
-static const Ipp8u iv[IV_LEN] = {0xca, 0xfe, 0xba, 0xbe, 0xfa, 0xce,
-                                 0xdb, 0xad, 0xde, 0xca, 0xf8, 0x88};
-
 char encrypt_data[BUFSIZ] = "Data to encrypt\n";
 
-void decrypt_object(Ipp8u *pOutPlainText, Ipp8u *unsealedkey128) {
+void decrypt_object(Ipp8u *pOutPlainText, Ipp8u *unsealedkey128, Ipp8u *inputData, int totalLen) {
+    const Ipp8u *iv = inputData;                   // First 12 bytes
+    const Ipp8u *tag = inputData + totalLen - 16;  // Last 16 bytes
+    const Ipp8u *cipherText = inputData + IV_LEN;  // After IV
+    int MSG_LEN = totalLen - IV_LEN - 16;          // Ciphertext length
+
     int AESGCMSize = 0;
     IppsAES_GCMState *pAESGCMState = 0;
     ippsAES_GCMGetSize(&AESGCMSize);
     pAESGCMState = (IppsAES_GCMState *)(new Ipp8u[AESGCMSize]);
+
     ippsAES_GCMInit(unsealedkey128, KEY_SIZE, pAESGCMState, AESGCMSize);
     ippsAES_GCMStart(iv, IV_LEN, NULL, 0, pAESGCMState);
     ippsAES_GCMDecrypt(cipherText, pOutPlainText, MSG_LEN, pAESGCMState);
+
+    Ipp8u computedTag[16];
+    ippsAES_GCMGetTag(computedTag, 16, pAESGCMState);
+    bool tagMatches = memcmp(computedTag, tag, 16) == 0;
+    if (!tagMatches) {
+        char buffer[] = "Failed tag check";
+        ocall_print_string(buffer);
+    }
     ippsAES_GCMReset(pAESGCMState);
     if (pAESGCMState) delete[] (Ipp8u *)pAESGCMState;
 }
@@ -43,14 +48,19 @@ void get_key(const uint8_t *sealed_blob, Ipp8u *unsealedkey128) {
     memcpy(unsealedkey128, decrypt_data, KEY_SIZE);
 }
 
-sgx_status_t test_aes_key(const uint8_t *sealed_blob, size_t data_size) {
+sgx_status_t test_aes_key(const uint8_t *sealed_blob, size_t data_size, uint8_t *encrypted_buffer,
+                          size_t buffer_size) {
     Ipp8u unsealedkey128[KEY_SIZE];
     get_key(sealed_blob, unsealedkey128);
-    Ipp8u pOutPlainText[MSG_LEN] = {};
-    decrypt_object(pOutPlainText, unsealedkey128);
-    Ipp8u pOutPlainTextNoTag[MSG_LEN - 16] = {};
-    memcpy(pOutPlainTextNoTag, pOutPlainText, MSG_LEN - 16);
-    print_byte_by_byte((const char *)pOutPlainTextNoTag, MSG_LEN);
+    Ipp8u pOutPlainText[buffer_size - 12 - 16] = {};
+    decrypt_object(pOutPlainText, unsealedkey128, encrypted_buffer, buffer_size);
+    double *userValues = reinterpret_cast<double *>(pOutPlainText);
+    size_t numValues = (buffer_size - 12 - 16) / sizeof(double);
+    char buffer[100];
+    for (size_t i = 0; i < numValues; ++i) {
+        snprintf(buffer, sizeof(buffer), "double[%zu] = %.10f\n", i, userValues[i]);
+        ocall_print_string(buffer);
+    }
 }
 
 sgx_status_t seal_aes_key(uint8_t *key128, uint32_t key_size, uint8_t *sealed_blob,
