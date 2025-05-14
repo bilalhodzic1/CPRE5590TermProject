@@ -44,3 +44,4 @@ sealed_sym_key.txt
 .clang-format
 data.bin
 test.bin
+output.bin

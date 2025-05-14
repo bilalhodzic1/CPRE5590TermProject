@@ -12,6 +12,10 @@ static const int MSG_LEN = 30;
 static const int IV_LEN = 12;
 static Ipp8u key128_blank[KEY_SIZE] = {};
 
+bool generate_random_IV(Ipp8u *iv, int ivSize = IV_LEN) {
+    return sgx_read_rand(iv, ivSize) == SGX_SUCCESS;
+}
+
 void decrypt_object(Ipp8u *pOutPlainText, Ipp8u *unsealedkey128, Ipp8u *inputData, int totalLen) {
     const Ipp8u *iv = inputData;                   // First 12 bytes
     const Ipp8u *tag = inputData + totalLen - 16;  // Last 16 bytes
@@ -47,7 +51,8 @@ void get_key(const uint8_t *sealed_blob, Ipp8u *unsealedkey128) {
 }
 
 sgx_status_t perform_aggregation(const uint8_t *sealed_blob, size_t data_size,
-                                 uint8_t *encrypted_buffer, size_t buffer_size, int type) {
+                                 uint8_t *encrypted_buffer, size_t buffer_size, int type,
+                                 uint8_t *output_buffer, uint32_t output_buffer_size) {
     Ipp8u unsealedkey128[KEY_SIZE];
     get_key(sealed_blob, unsealedkey128);
     Ipp8u pOutPlainText[buffer_size - 12 - 16] = {};
@@ -62,9 +67,23 @@ sgx_status_t perform_aggregation(const uint8_t *sealed_blob, size_t data_size,
         }
         agg_result = summation;
     }
-    char buffer[100];
-    snprintf(buffer, sizeof(buffer), "Result = %.10f\n", agg_result);
-    ocall_print_string(buffer);
+    Ipp8u encryption_iv[12];
+    generate_random_IV(encryption_iv);
+    Ipp8u result_plaintext[sizeof(double)];
+    memcpy(result_plaintext, &agg_result, sizeof(double));
+    Ipp8u output_tag[16];
+    Ipp8u result_ciphertext[sizeof(double)];
+
+    int encrypt_ctx_size = 0;
+    ippsAES_GCMGetSize(&encrypt_ctx_size);
+    IppsAES_GCMState *output_context = (IppsAES_GCMState *)(new Ipp8u[encrypt_ctx_size]);
+    ippsAES_GCMInit(unsealedkey128, KEY_SIZE, output_context, encrypt_ctx_size);
+    ippsAES_GCMStart(encryption_iv, IV_LEN, NULL, 0, output_context);
+    ippsAES_GCMEncrypt(result_plaintext, result_ciphertext, sizeof(double), output_context);
+    ippsAES_GCMGetTag(output_tag, sizeof(output_tag), output_context);
+    memcpy(output_buffer, encryption_iv, IV_LEN);
+    memcpy(output_buffer + IV_LEN, result_ciphertext, sizeof(double));
+    memcpy(output_buffer + IV_LEN + sizeof(double), output_tag, sizeof(output_tag));
 }
 
 sgx_status_t seal_aes_key(uint8_t *key128, uint32_t key_size, uint8_t *sealed_blob,

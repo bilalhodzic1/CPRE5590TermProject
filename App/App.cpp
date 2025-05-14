@@ -132,7 +132,12 @@ int SGX_CDECL main(int argc, char *argv[]) {
         uint8_t *data_buffer = (uint8_t *)malloc(fsize);
         std::ifstream(argv[2], std::ios::binary).read((char *)data_buffer, data_size);
         sgx_status_t retval;
-        perform_aggregation(global_eid, &retval, temp_buf, fsize, data_buffer, data_size, 1);
+        int output_buffer_size = 12 + sizeof(double) + 16;
+        uint8_t output_buffer[output_buffer_size];
+        perform_aggregation(global_eid, &retval, temp_buf, fsize, data_buffer, data_size, 1,
+                            output_buffer, output_buffer_size);
+        std::ofstream("output.bin", std::ios::binary)
+            .write(reinterpret_cast<char *>(output_buffer), output_buffer_size);
     }
 
     sgx_destroy_enclave(global_eid);
