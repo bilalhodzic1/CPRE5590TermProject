@@ -1,7 +1,6 @@
 enclave {
     trusted{
         public void enclave_print_string([in, string]char* str_to_print);
-        public void compute_array_average([in, count=cnt] int *numbers, size_t cnt);
         public uint32_t get_sealed_data_size();
         public sgx_status_t perform_aggregation([in, size=data_size] const uint8_t *sealed_blob, size_t data_size,
                                          [in, size=buffer_size] uint8_t* encrypted_buffer, size_t buffer_size, int type,

@@ -124,17 +124,4 @@ sgx_status_t seal_aes_key(uint8_t *key128, uint32_t key_size, uint8_t *sealed_bl
 
 void enclave_print_string(char *str_to_print) { ocall_print_string(str_to_print); }
 
-void compute_array_average(int *numbers, size_t cnt) {
-    int array_size = (int)cnt;
-    int i;
-    double sum = 0;
-    for (i = 0; i < array_size; i++) {
-        sum += numbers[i];
-    }
-    double average = sum / (double)array_size;
-    char buffer[64];
-    snprintf(buffer, sizeof(buffer), "Avg: %.2lf\n", average);
-    ocall_print_string(buffer);
-}
-
 uint32_t get_sealed_data_size() { return sgx_calc_sealed_data_size(0, sizeof(key128_blank)); }
